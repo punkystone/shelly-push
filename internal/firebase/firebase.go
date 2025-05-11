@@ -37,6 +37,9 @@ func (client *Client) SendToTopic(topic string, title string) error {
 		Notification: &messaging.Notification{
 			Title: title,
 		},
+		Android: &messaging.AndroidConfig{
+			Priority: "high",
+		},
 		Topic: topic,
 	}
 
