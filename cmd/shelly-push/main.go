@@ -9,6 +9,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const openState = "open"
+const closeState = "close"
+
 func main() {
 	env, err := util.CheckEnv()
 	if err != nil {
@@ -33,24 +36,46 @@ func main() {
 	mqttClient.Subscribe(env.MqttTopic)
 	log.Info().Msgf("Subscribed to topic: %s", env.MqttTopic)
 	connectMessage := true
+	var previousState bool
 	for message := range mqttClient.Messages {
-		if message.Topic == env.MqttTopic {
-			if connectMessage {
-				connectMessage = false
-				continue
-			}
-			state, err := info.ParseStatus(message.Value)
-			if err != nil {
-				log.Error().Err(err).Msg("Failed to parse status")
-				continue
-			}
-			log.Info().Msgf("Received state: %s", state)
-			if state == "open" {
-				sendPushNotification(firebaseClient, env.FirebaseTopic, "Door was opened")
-			} else if state == "close" {
-				sendPushNotification(firebaseClient, env.FirebaseTopic, "Door was closed")
-			}
+		processMessage(&previousState, &connectMessage, message, env.MqttTopic, env.FirebaseTopic, firebaseClient)
+	}
+}
+
+func processMessage(previousState *bool, connectMessage *bool, message mqtt.Message, mqttTopic string, firebaseTopic string, firebaseClient *firebase.Client) {
+	if message.Topic != mqttTopic {
+		return
+	}
+	state, err := info.ParseStatus(message.Value)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to parse status")
+		return
+	}
+	if *connectMessage {
+		*connectMessage = false
+		if state == openState {
+			*previousState = true
 		}
+		if state == closeState {
+			*previousState = false
+		}
+		return
+	}
+	if previousState != nil && ((state == openState && *previousState) || (state == closeState && !*previousState)) {
+		return
+	}
+	if state == openState {
+		*previousState = true
+	}
+	if state == closeState {
+		*previousState = false
+	}
+
+	log.Info().Msgf("Received state: %s", state)
+	if state == openState {
+		sendPushNotification(firebaseClient, firebaseTopic, "Door was opened")
+	} else if state == closeState {
+		sendPushNotification(firebaseClient, firebaseTopic, "Door was closed")
 	}
 }
 

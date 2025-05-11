@@ -8,19 +8,19 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-type message struct {
+type Message struct {
 	Topic string
 	Value string
 }
 
 type Client struct {
 	client    mqtt.Client
-	Messages  chan message
+	Messages  chan Message
 	OnConnect func()
 }
 
 func NewClient(url string, clientID string, username string, password string, caPath string, clientCertPath string, clientKeyPath string) (*Client, error) {
-	client := &Client{client: nil, Messages: make(chan message)}
+	client := &Client{client: nil, Messages: make(chan Message)}
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(url)
 	opts.SetClientID(clientID)
@@ -59,7 +59,7 @@ func (c *Client) getTLSConfig(caPath string, clientCertPath string, clientKeyPat
 }
 
 func (c *Client) publishHandler(_ mqtt.Client, msg mqtt.Message) {
-	c.Messages <- message{
+	c.Messages <- Message{
 		Topic: msg.Topic(),
 		Value: string(msg.Payload()),
 	}
