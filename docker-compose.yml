@@ -1,0 +1,24 @@
+services:
+  shelly-push:
+    container_name: shelly-push
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+       - MQTT_TOPIC=${MQTT_TOPIC}
+       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+       - FIREBASE_TOPIC=${FIREBASE_TOPIC}
+       - FIREBASE_KEY_PATH=${FIREBASE_KEY_PATH}
+       - MQTT_URL=${MQTT_URL}
+       - MQTT_CLIENT_ID=${MQTT_CLIENT_ID}
+       - MQTT_USERNAME=${MQTT_USERNAME}
+       - MQTT_PASSWORD=${MQTT_PASSWORD}
+       - MQTT_CA_PATH=/ca_certificate.pem
+       - MQTT_CLIENT_CERT_PATH=/client_certificate.pem
+       - MQTT_CLIENT_KEY_PATH=/client_key.pem
+    volumes:
+      - ./client_key.pem:/client_key.pem
+      - ./client_certificate.pem:/client_certificate.pem
+      - ./ca_certificate.pem:/ca_certificate.pem
+      - ./key.json:/key.json
