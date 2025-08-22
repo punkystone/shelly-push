@@ -6,14 +6,16 @@ services:
       dockerfile: Dockerfile
     restart: always
     environment:
-       - MQTT_TOPIC=${MQTT_TOPIC}
-       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
-       - FIREBASE_TOPIC=${FIREBASE_TOPIC}
-       - FIREBASE_KEY_PATH=${FIREBASE_KEY_PATH}
-       - MQTT_URL=${MQTT_URL}
-       - MQTT_CLIENT_ID=${MQTT_CLIENT_ID}
-       - MQTT_USERNAME=${MQTT_USERNAME}
-       - MQTT_PASSWORD=${MQTT_PASSWORD}
+       - SHELLY_MQTT_TOPIC
+       - SHELLY_FIREBASE_TOPIC
+       - BATTERY_MQTT_TOPIC
+       - BATTERY_FIREBASE_TOPIC
+       - FIREBASE_PROJECT_ID
+       - FIREBASE_KEY_PATH
+       - MQTT_URL
+       - MQTT_CLIENT_ID
+       - MQTT_USERNAME
+       - MQTT_PASSWORD
        - MQTT_CA_PATH=/ca_certificate.pem
        - MQTT_CLIENT_CERT_PATH=/client_certificate.pem
        - MQTT_CLIENT_KEY_PATH=/client_key.pem

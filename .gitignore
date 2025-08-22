@@ -2,3 +2,4 @@ bin
 *.pem
 key.json
 .env
+config.json

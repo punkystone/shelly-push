@@ -2,15 +2,12 @@ package main
 
 import (
 	"go_test/internal/firebase"
-	"go_test/internal/info"
+	"go_test/internal/handlers"
 	"go_test/internal/mqtt"
 	"go_test/internal/util"
 
 	"github.com/rs/zerolog/log"
 )
-
-const openState = "open"
-const closeState = "close"
 
 func main() {
 	env, err := util.CheckEnv()
@@ -33,55 +30,23 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	mqttClient.Subscribe(env.MqttTopic)
-	log.Info().Msgf("Subscribed to topic: %s", env.MqttTopic)
-	connectMessage := true
-	var previousState bool
+	mqttClient.Subscribe(env.ShellyMqttTopic)
+	mqttClient.Subscribe(env.BatteryMqttTopic)
+
+	doorHandler := handlers.NewDoorHandler(firebaseClient, env.ShellyFirebaseTopic)
+	batteryHandler := handlers.NewBatteryHandler(firebaseClient, env.BatteryFirebaseTopic)
 	for message := range mqttClient.Messages {
-		processMessage(&previousState, &connectMessage, message, env.MqttTopic, env.FirebaseTopic, firebaseClient)
-	}
-}
-
-func processMessage(previousState *bool, connectMessage *bool, message mqtt.Message, mqttTopic string, firebaseTopic string, firebaseClient *firebase.Client) {
-	if message.Topic != mqttTopic {
-		return
-	}
-	state, err := info.ParseStatus(message.Value)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to parse status")
-		return
-	}
-	if *connectMessage {
-		*connectMessage = false
-		if state == openState {
-			*previousState = true
+		switch message.Topic {
+		case env.ShellyMqttTopic:
+			err := doorHandler.Handle(message.Value)
+			if err != nil {
+				log.Error().Err(err)
+			}
+		case env.BatteryMqttTopic:
+			err := batteryHandler.Handle(message.Value)
+			if err != nil {
+				log.Error().Err(err)
+			}
 		}
-		if state == closeState {
-			*previousState = false
-		}
-		return
-	}
-	if previousState != nil && ((state == openState && *previousState) || (state == closeState && !*previousState)) {
-		return
-	}
-	if state == openState {
-		*previousState = true
-	}
-	if state == closeState {
-		*previousState = false
-	}
-
-	log.Info().Msgf("Received state: %s", state)
-	if state == openState {
-		sendPushNotification(firebaseClient, firebaseTopic, "Door was opened")
-	} else if state == closeState {
-		sendPushNotification(firebaseClient, firebaseTopic, "Door was closed")
-	}
-}
-
-func sendPushNotification(firebaseClient *firebase.Client, topic string, title string) {
-	err := firebaseClient.SendToTopic(topic, title)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to send message")
 	}
 }

@@ -6,31 +6,41 @@ import (
 )
 
 type Env struct {
-	MqttTopic          string
-	FirebaseProjectID  string
-	FirebaseTopic      string
-	FirebaseKeyPath    string
-	MqttURL            string
-	MqttClientID       string
-	MqttUsername       string
-	MqttPassword       string
-	MqttCAPath         string
-	MqttClientCertPath string
-	MqttClientKeyPath  string
+	ShellyMqttTopic      string
+	BatteryMqttTopic     string
+	FirebaseProjectID    string
+	ShellyFirebaseTopic  string
+	BatteryFirebaseTopic string
+	FirebaseKeyPath      string
+	MqttURL              string
+	MqttClientID         string
+	MqttUsername         string
+	MqttPassword         string
+	MqttCAPath           string
+	MqttClientCertPath   string
+	MqttClientKeyPath    string
 }
 
 func CheckEnv() (*Env, error) {
-	mqttTopic, exists := os.LookupEnv("MQTT_TOPIC")
+	shellyMqttTopic, exists := os.LookupEnv("SHELLY_MQTT_TOPIC")
 	if !exists {
-		return nil, errors.New("MQTT_TOPIC environment variable not set")
+		return nil, errors.New("SHELLY_MQTT_TOPIC environment variable not set")
+	}
+	batteryMqttTopic, exists := os.LookupEnv("BATTERY_MQTT_TOPIC")
+	if !exists {
+		return nil, errors.New("BATTERY_MQTT_TOPIC environment variable not set")
 	}
 	firebaseProjectID, exists := os.LookupEnv("FIREBASE_PROJECT_ID")
 	if !exists {
 		return nil, errors.New("FIREBASE_PROJECT_ID environment variable not set")
 	}
-	firebaseTopic, exists := os.LookupEnv("FIREBASE_TOPIC")
+	shellyFirebaseTopic, exists := os.LookupEnv("SHELLY_FIREBASE_TOPIC")
 	if !exists {
-		return nil, errors.New("FIREBASE_TOPIC environment variable not set")
+		return nil, errors.New("SHELLY_FIREBASE_TOPIC environment variable not set")
+	}
+	batteryFirebaseTopic, exists := os.LookupEnv("BATTERY_FIREBASE_TOPIC")
+	if !exists {
+		return nil, errors.New("BATTERY_FIREBASE_TOPIC environment variable not set")
 	}
 	firebaseKeyPath, exists := os.LookupEnv("FIREBASE_KEY_PATH")
 	if !exists {
@@ -66,17 +76,19 @@ func CheckEnv() (*Env, error) {
 	}
 
 	env := &Env{
-		MqttTopic:          mqttTopic,
-		FirebaseProjectID:  firebaseProjectID,
-		FirebaseTopic:      firebaseTopic,
-		FirebaseKeyPath:    firebaseKeyPath,
-		MqttURL:            mqttURL,
-		MqttClientID:       mqttClientID,
-		MqttUsername:       mqttUsername,
-		MqttPassword:       mqttPassword,
-		MqttCAPath:         mqttCAPath,
-		MqttClientCertPath: mqttClientCertPath,
-		MqttClientKeyPath:  mqttClientKeyPath,
+		ShellyMqttTopic:      shellyMqttTopic,
+		BatteryMqttTopic:     batteryMqttTopic,
+		FirebaseProjectID:    firebaseProjectID,
+		ShellyFirebaseTopic:  shellyFirebaseTopic,
+		BatteryFirebaseTopic: batteryFirebaseTopic,
+		FirebaseKeyPath:      firebaseKeyPath,
+		MqttURL:              mqttURL,
+		MqttClientID:         mqttClientID,
+		MqttUsername:         mqttUsername,
+		MqttPassword:         mqttPassword,
+		MqttCAPath:           mqttCAPath,
+		MqttClientCertPath:   mqttClientCertPath,
+		MqttClientKeyPath:    mqttClientKeyPath,
 	}
 	return env, nil
 }
