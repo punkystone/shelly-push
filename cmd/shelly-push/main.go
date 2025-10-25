@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"go_test/internal/firebase"
 	"go_test/internal/handlers"
 	"go_test/internal/mqtt"
+	"go_test/internal/tailscale"
 	"go_test/internal/util"
 
 	"github.com/rs/zerolog/log"
@@ -14,12 +16,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	tailScaleServer := tailscale.NewServer(env.TSHostname, env.TSAuthKey, env.TSControlURL)
+	err = tailScaleServer.Connect()
+	if err != nil {
+		panic(err)
+	}
 	firebaseClient, err := firebase.Init(env.FirebaseKeyPath, env.FirebaseProjectID)
 	if err != nil {
 		panic(err)
 	}
 	log.Info().Msg("Firebase client initialized")
-	mqttClient, err := mqtt.NewClient(env.MqttURL, env.MqttClientID, env.MqttUsername, env.MqttPassword, env.MqttCAPath, env.MqttClientCertPath, env.MqttClientKeyPath)
+	mqttClient, err := mqtt.NewClient(env.MqttURL, env.MqttClientID, tailScaleServer)
 	if err != nil {
 		panic(err)
 	}
@@ -36,6 +43,8 @@ func main() {
 	doorHandler := handlers.NewDoorHandler(firebaseClient, env.ShellyFirebaseTopic)
 	batteryHandler := handlers.NewBatteryHandler(firebaseClient, env.BatteryFirebaseTopic)
 	for message := range mqttClient.Messages {
+		fmt.Printf("Topic %s Message %s\n", message.Topic, message.Value)
+
 		switch message.Topic {
 		case env.ShellyMqttTopic:
 			err := doorHandler.Handle(message.Value)

@@ -1,9 +1,10 @@
 package mqtt
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"os"
+	"context"
+	"go_test/internal/tailscale"
+	"net"
+	"net/url"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -19,43 +20,23 @@ type Client struct {
 	OnConnect func()
 }
 
-func NewClient(url string, clientID string, username string, password string, caPath string, clientCertPath string, clientKeyPath string) (*Client, error) {
+func NewClient(connectUrl string, clientID string, tailscaleServer *tailscale.Server) (*Client, error) {
 	client := &Client{client: nil, Messages: make(chan Message)}
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(url)
+	opts.AddBroker(connectUrl)
 	opts.SetClientID(clientID)
-	tlsConfig, err := client.getTLSConfig(caPath, clientCertPath, clientKeyPath)
-	if err != nil {
-		return nil, err
-	}
-	opts.SetTLSConfig(tlsConfig)
-	opts.SetUsername(username)
-	opts.SetPassword(password)
 	opts.SetDefaultPublishHandler(client.publishHandler)
+	opts.CustomOpenConnectionFn = func(uri *url.URL, options mqtt.ClientOptions) (net.Conn, error) {
+		conn, err := tailscaleServer.TSServer.Dial(context.Background(), "tcp", uri.Host)
+		if err != nil {
+			return nil, err
+		}
+		return conn, nil
+	}
 	opts.OnConnect = client.onConnect
 	opts.AutoReconnect = true
 	client.client = mqtt.NewClient(opts)
 	return client, nil
-}
-
-func (c *Client) getTLSConfig(caPath string, clientCertPath string, clientKeyPath string) (*tls.Config, error) {
-	certpool := x509.NewCertPool()
-	ca, err := os.ReadFile(caPath)
-	if err != nil {
-		return nil, err
-	}
-	certpool.AppendCertsFromPEM(ca)
-	clientKeyPair, err := tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
-	if err != nil {
-		panic(err)
-	}
-	return &tls.Config{
-		RootCAs:      certpool,
-		ClientAuth:   tls.NoClientCert,
-		ClientCAs:    nil,
-		MinVersion:   tls.VersionTLS13,
-		Certificates: []tls.Certificate{clientKeyPair},
-	}, nil
 }
 
 func (c *Client) publishHandler(_ mqtt.Client, msg mqtt.Message) {

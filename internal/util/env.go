@@ -14,11 +14,9 @@ type Env struct {
 	FirebaseKeyPath      string
 	MqttURL              string
 	MqttClientID         string
-	MqttUsername         string
-	MqttPassword         string
-	MqttCAPath           string
-	MqttClientCertPath   string
-	MqttClientKeyPath    string
+	TSHostname           string
+	TSControlURL         string
+	TSAuthKey            string
 }
 
 func CheckEnv() (*Env, error) {
@@ -54,25 +52,17 @@ func CheckEnv() (*Env, error) {
 	if !exists {
 		return nil, errors.New("MQTT_CLIENT_ID environment variable not set")
 	}
-	mqttUsername, exists := os.LookupEnv("MQTT_USERNAME")
+	tsHostname, exists := os.LookupEnv("TS_HOSTNAME")
 	if !exists {
-		return nil, errors.New("MQTT_USERNAME environment variable not set")
+		return nil, errors.New("TS_HOSTNAME environment variable not set")
 	}
-	mqttPassword, exists := os.LookupEnv("MQTT_PASSWORD")
+	tsControlURL, exists := os.LookupEnv("TS_CONTROL_URL")
 	if !exists {
-		return nil, errors.New("MQTT_PASSWORD environment variable not set")
+		return nil, errors.New("TS_CONTROL_URL environment variable not set")
 	}
-	mqttCAPath, exists := os.LookupEnv("MQTT_CA_PATH")
+	tsAuthKey, exists := os.LookupEnv("TS_AUTH_KEY")
 	if !exists {
-		return nil, errors.New("MQTT_CA_PATH environment variable not set")
-	}
-	mqttClientCertPath, exists := os.LookupEnv("MQTT_CLIENT_CERT_PATH")
-	if !exists {
-		return nil, errors.New("MQTT_CLIENT_CERT_PATH environment variable not set")
-	}
-	mqttClientKeyPath, exists := os.LookupEnv("MQTT_CLIENT_KEY_PATH")
-	if !exists {
-		return nil, errors.New("MQTT_CLIENT_KEY_PATH environment variable not set")
+		return nil, errors.New("TS_AUTH_KEY environment variable not set")
 	}
 
 	env := &Env{
@@ -84,11 +74,9 @@ func CheckEnv() (*Env, error) {
 		FirebaseKeyPath:      firebaseKeyPath,
 		MqttURL:              mqttURL,
 		MqttClientID:         mqttClientID,
-		MqttUsername:         mqttUsername,
-		MqttPassword:         mqttPassword,
-		MqttCAPath:           mqttCAPath,
-		MqttClientCertPath:   mqttClientCertPath,
-		MqttClientKeyPath:    mqttClientKeyPath,
+		TSHostname:           tsHostname,
+		TSControlURL:         tsControlURL,
+		TSAuthKey:            tsAuthKey,
 	}
 	return env, nil
 }
