@@ -7,6 +7,7 @@ import (
 	"go_test/internal/mqtt"
 	"go_test/internal/tailscale"
 	"go_test/internal/util"
+	"io"
 
 	"github.com/rs/zerolog/log"
 )
@@ -21,6 +22,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	resp, err := tailScaleServer.TSServer.HTTPClient().Get("http://192.168.0.27:8000")
+	if err != nil {
+		panic(err)
+	}
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(bodyBytes))
 	firebaseClient, err := firebase.Init(env.FirebaseKeyPath, env.FirebaseProjectID)
 	if err != nil {
 		panic(err)
