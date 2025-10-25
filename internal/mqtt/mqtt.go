@@ -27,11 +27,7 @@ func NewClient(connectUrl string, clientID string, tailscaleServer *tailscale.Se
 	opts.SetClientID(clientID)
 	opts.SetDefaultPublishHandler(client.publishHandler)
 	opts.CustomOpenConnectionFn = func(uri *url.URL, options mqtt.ClientOptions) (net.Conn, error) {
-		conn, err := tailscaleServer.TSServer.Dial(context.Background(), "tcp", uri.Host)
-		if err != nil {
-			return nil, err
-		}
-		return conn, nil
+		return tailscaleServer.TSServer.Dial(context.Background(), "tcp", uri.Host)
 	}
 	opts.OnConnect = client.onConnect
 	opts.AutoReconnect = true
