@@ -5,6 +5,7 @@ import (
 	"go_test/internal/tailscale"
 	"net"
 	"net/url"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -20,17 +21,23 @@ type Client struct {
 	OnConnect func()
 }
 
+const connectWait = 20 * time.Second
+
 func NewClient(connectUrl string, clientID string, tailscaleServer *tailscale.Server) (*Client, error) {
 	client := &Client{client: nil, Messages: make(chan Message)}
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(connectUrl)
 	opts.SetClientID(clientID)
+	opts.SetAutoReconnect(true)
+	opts.SetConnectRetry(true)
+	opts.SetResumeSubs(true)
+	opts.SetConnectRetryInterval(5 * time.Second)
+	opts.SetMaxReconnectInterval(2 * time.Minute)
 	opts.SetDefaultPublishHandler(client.publishHandler)
-	opts.CustomOpenConnectionFn = func(uri *url.URL, options mqtt.ClientOptions) (net.Conn, error) {
+	opts.SetCustomOpenConnectionFn(func(uri *url.URL, options mqtt.ClientOptions) (net.Conn, error) {
 		return tailscaleServer.TSServer.Dial(context.Background(), "tcp", uri.Host)
-	}
+	})
 	opts.OnConnect = client.onConnect
-	opts.AutoReconnect = true
 	client.client = mqtt.NewClient(opts)
 	return client, nil
 }
@@ -47,7 +54,7 @@ func (c *Client) onConnect(_ mqtt.Client) {
 }
 
 func (c *Client) Connect() error {
-	if token := c.client.Connect(); token.Wait() && token.Error() != nil {
+	if token := c.client.Connect(); token.WaitTimeout(connectWait) && token.Error() != nil {
 		return token.Error()
 	}
 	return nil
