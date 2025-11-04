@@ -1,10 +1,33 @@
 services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale-shelly-push
+    hostname: ${TS_HOSTNAME}
+    restart: unless-stopped
+    environment:
+      TS_AUTHKEY: ${TS_AUTH_KEY}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_EXTRA_ARGS: --login-server=${TS_CONTROL_URL} --hostname=${TS_HOSTNAME}
+      TS_USERSPACE: false
+    volumes:
+      - ./tailscale-state:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - net_raw
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
   shelly-push:
     container_name: shelly-push
     build:
       context: .
       dockerfile: Dockerfile
-    restart: always
+    network_mode: container:tailscale-shelly-push
+    restart: unless-stopped
     environment:
        - SHELLY_MQTT_TOPIC
        - SHELLY_FIREBASE_TOPIC
@@ -14,9 +37,8 @@ services:
        - FIREBASE_KEY_PATH
        - MQTT_URL
        - MQTT_CLIENT_ID
-       - TS_HOSTNAME
-       - TS_AUTH_KEY
-       - TS_CONTROL_URL
+       - DEBUG
+    depends_on:
+      - tailscale
     volumes:
       - ./key.json:/key.json
-      - ./ts-data:/var/lib/tsnet

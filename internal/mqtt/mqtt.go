@@ -1,13 +1,8 @@
 package mqtt
 
 import (
-	"context"
-	"go_test/internal/tailscale"
-	"net"
-	"net/url"
-	"time"
-
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/rs/zerolog/log"
 )
 
 type Message struct {
@@ -21,23 +16,18 @@ type Client struct {
 	OnConnect func()
 }
 
-const connectWait = 20 * time.Second
-
-func NewClient(connectUrl string, clientID string, tailscaleServer *tailscale.Server) (*Client, error) {
+func NewClient(connectUrl string, clientID string) (*Client, error) {
 	client := &Client{client: nil, Messages: make(chan Message)}
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(connectUrl)
 	opts.SetClientID(clientID)
-	opts.SetAutoReconnect(true)
-	opts.SetConnectRetry(true)
-	opts.SetResumeSubs(true)
-	opts.SetConnectRetryInterval(5 * time.Second)
-	opts.SetMaxReconnectInterval(2 * time.Minute)
 	opts.SetDefaultPublishHandler(client.publishHandler)
-	opts.SetCustomOpenConnectionFn(func(uri *url.URL, options mqtt.ClientOptions) (net.Conn, error) {
-		return tailscaleServer.TSServer.Dial(context.Background(), "tcp", uri.Host)
-	})
 	opts.OnConnect = client.onConnect
+	opts.OnConnectionLost = func(client mqtt.Client, err error) {
+		log.Info().Msgf("connection lost %v", err)
+	}
+	opts.AutoReconnect = true
+	opts.ConnectRetry = true
 	client.client = mqtt.NewClient(opts)
 	return client, nil
 }
@@ -54,7 +44,7 @@ func (c *Client) onConnect(_ mqtt.Client) {
 }
 
 func (c *Client) Connect() error {
-	if token := c.client.Connect(); token.WaitTimeout(connectWait) && token.Error() != nil {
+	if token := c.client.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
 	return nil

@@ -9,3 +9,4 @@ MQTT_CLIENT_ID = ""
 TS_HOSTNAME = ""
 TS_CONTROL_URL = ""
 TS_AUTH_KEY = ""
+DEBUG = false

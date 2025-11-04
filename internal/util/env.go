@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"os"
+	"strconv"
 )
 
 type Env struct {
@@ -14,9 +15,7 @@ type Env struct {
 	FirebaseKeyPath      string
 	MqttURL              string
 	MqttClientID         string
-	TSHostname           string
-	TSControlURL         string
-	TSAuthKey            string
+	Debug                bool
 }
 
 func CheckEnv() (*Env, error) {
@@ -52,17 +51,13 @@ func CheckEnv() (*Env, error) {
 	if !exists {
 		return nil, errors.New("MQTT_CLIENT_ID environment variable not set")
 	}
-	tsHostname, exists := os.LookupEnv("TS_HOSTNAME")
+	debug, exists := os.LookupEnv("DEBUG")
 	if !exists {
-		return nil, errors.New("TS_HOSTNAME environment variable not set")
+		return nil, errors.New("DEBUG environment variable not set")
 	}
-	tsControlURL, exists := os.LookupEnv("TS_CONTROL_URL")
-	if !exists {
-		return nil, errors.New("TS_CONTROL_URL environment variable not set")
-	}
-	tsAuthKey, exists := os.LookupEnv("TS_AUTH_KEY")
-	if !exists {
-		return nil, errors.New("TS_AUTH_KEY environment variable not set")
+	debugParsed, err := strconv.ParseBool(debug)
+	if err != nil {
+		return nil, errors.New("DEBUG  environment variable not a bool")
 	}
 
 	env := &Env{
@@ -74,9 +69,7 @@ func CheckEnv() (*Env, error) {
 		FirebaseKeyPath:      firebaseKeyPath,
 		MqttURL:              mqttURL,
 		MqttClientID:         mqttClientID,
-		TSHostname:           tsHostname,
-		TSControlURL:         tsControlURL,
-		TSAuthKey:            tsAuthKey,
+		Debug:                debugParsed,
 	}
 	return env, nil
 }
